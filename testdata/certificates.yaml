@@ -1,0 +1,35 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: libvirt-api
+spec:
+  commonName: libvirt
+  duration: 87600h0m0s
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: self-signed
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  renewBefore: 720h0m0s
+  secretName: libvirt-api-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: libvirt-vnc
+spec:
+  commonName: libvirt
+  duration: 87600h0m0s
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: self-signed
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  renewBefore: 720h0m0s
+  secretName: libvirt-vnc-ca

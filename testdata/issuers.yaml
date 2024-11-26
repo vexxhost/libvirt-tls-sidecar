@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: libvirt-api
+spec:
+  ca:
+    secretName: libvirt-api-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: libvirt-vnc
+spec:
+  ca:
+    secretName: libvirt-vnc-ca
