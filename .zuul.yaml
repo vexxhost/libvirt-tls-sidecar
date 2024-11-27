@@ -22,7 +22,7 @@
             - linux/arm64
           tags:
             - "{{ zuul.commit_id }}"
-            - "{{ zuul.tag is defined | ternary(zuul.tag, 'latest') }}"
+            - "{{ zuul.tag is defined | ternary(zuul.tag, 'main') }}"
 
 - job:
     name: libvirt-tls-sidecar-upload-container-image
