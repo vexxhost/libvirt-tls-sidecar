@@ -3,7 +3,7 @@
 
 ARG RELEASE=bookworm
 
-FROM golang:1.23-${RELEASE} AS builder
+FROM golang:1.25.5 AS builder
 WORKDIR /go/src/app
 RUN \
   apt-get update && \
