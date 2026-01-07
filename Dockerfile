@@ -1,9 +1,9 @@
 # Copyright (c) 2024 VEXXHOST, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-ARG RELEASE=bookworm
+ARG RELEASE=trixie
 
-FROM golang:1.23-${RELEASE} AS builder
+FROM golang:1.25.5-${RELEASE} AS builder
 WORKDIR /go/src/app
 RUN \
   apt-get update && \
@@ -15,7 +15,7 @@ COPY pkg /go/src/app/pkg
 COPY go.mod go.sum main.go /go/src/app/
 RUN go build -o /libvirt-tls-sidecar main.go
 
-FROM debian:bookworm
+FROM debian:${RELEASE}
 RUN \
   apt-get update -qq && \
   apt-get install -qq -y --no-install-recommends \
