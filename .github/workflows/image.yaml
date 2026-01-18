@@ -33,6 +33,9 @@ jobs:
       - uses: depot/build-push-action@9785b135c3c76c33db102e45be96a25ab55cd507 # v1.16.2
         with:
           project: kfm1zcm810
+          load: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Verify virt-admin exists
+        run: docker run --rm --entrypoint virt-admin ${{ fromJSON(steps.meta.outputs.json).tags[0] }} --version
