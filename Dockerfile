@@ -19,7 +19,7 @@ FROM debian:${RELEASE}
 RUN \
   apt-get update -qq && \
   apt-get install -qq -y --no-install-recommends \
-    libvirt0 libvirt-clients && \
+    libvirt0 libvirt-daemon-common && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 COPY --from=builder /libvirt-tls-sidecar /usr/bin/libvirt-tls-sidecar
