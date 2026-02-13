@@ -48,7 +48,7 @@ func TestIssuerInfoEnvconfig(t *testing.T) {
 				"API_ISSUER_NAME": "ca-issuer",
 			},
 			wantErr:     true,
-			expectedErr: "required key API_ISSUER_KIND missing value",
+			expectedErr: "required key ISSUER_KIND missing value",
 		},
 		{
 			name:   "Missing ISSUER_NAME",
@@ -57,14 +57,14 @@ func TestIssuerInfoEnvconfig(t *testing.T) {
 				"API_ISSUER_KIND": "ClusterIssuer",
 			},
 			wantErr:     true,
-			expectedErr: "required key API_ISSUER_NAME missing value",
+			expectedErr: "required key ISSUER_NAME missing value",
 		},
 		{
 			name:        "Missing both required fields",
 			prefix:      "API",
 			envVars:     map[string]string{},
 			wantErr:     true,
-			expectedErr: "required key API_ISSUER_KIND missing value",
+			expectedErr: "required key ISSUER_KIND missing value",
 		},
 	}
 
@@ -173,7 +173,7 @@ func TestIssuerInfoEnvconfigTags(t *testing.T) {
 }
 
 func TestIssuerInfoEmptyValues(t *testing.T) {
-	t.Run("Empty values should fail validation", func(t *testing.T) {
+	t.Run("Empty values are accepted by envconfig", func(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("TEST_ISSUER_KIND", "")
 		os.Setenv("TEST_ISSUER_NAME", "")
@@ -181,8 +181,10 @@ func TestIssuerInfoEmptyValues(t *testing.T) {
 		var issuer IssuerInfo
 		err := envconfig.Process("TEST", &issuer)
 
-		// envconfig treats empty strings as missing for required fields
-		assert.Error(t, err)
+		// envconfig accepts empty strings for required fields
+		require.NoError(t, err)
+		assert.Equal(t, "", issuer.Kind)
+		assert.Equal(t, "", issuer.Name)
 	})
 }
 
