@@ -6,8 +6,7 @@ package template
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"github.com/vexxhost/pod-tls-sidecar/pkg/podinfo"
 	"github.com/vexxhost/pod-tls-sidecar/pkg/template"
 
@@ -15,15 +14,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TestIntegrationCertManagerTypes validates that cert-manager types are compatible
-func TestIntegrationCertManagerTypes(t *testing.T) {
-	tmpl, err := New("api", &IssuerInfo{
-		Kind: "ClusterIssuer",
-		Name: "test-issuer",
-	})
-	require.NoError(t, err)
+type IntegrationSuite struct {
+	suite.Suite
+}
 
-	certificate, err := tmpl.Execute(&template.Values{
+func (s *IntegrationSuite) createTemplate(name string, issuerKind string, issuerName string) *template.Template {
+	tmpl, err := New(name, &IssuerInfo{
+		Kind: issuerKind,
+		Name: issuerName,
+	})
+	s.Require().NoError(err)
+	return tmpl
+}
+
+func (s *IntegrationSuite) createDefaultValues() *template.Values {
+	return &template.Values{
 		PodInfo: podinfo.PodInfo{
 			Name:      "test-pod",
 			Namespace: "test-ns",
@@ -31,51 +36,32 @@ func TestIntegrationCertManagerTypes(t *testing.T) {
 		},
 		Hostname: "test",
 		FQDN:     "test.example.com",
-	})
-	require.NoError(t, err)
-
-	// Validate cert-manager Certificate fields are correctly populated
-	assert.IsType(t, &cmv1.Certificate{}, certificate)
-	assert.NotNil(t, certificate.TypeMeta)
-	assert.NotNil(t, certificate.ObjectMeta)
-	assert.NotNil(t, certificate.Spec)
+	}
 }
 
-// TestIntegrationCertManagerAPIVersion validates API version compatibility
-func TestIntegrationCertManagerAPIVersion(t *testing.T) {
-	tmpl, err := New("api", &IssuerInfo{
-		Kind: "Issuer",
-		Name: "test-issuer",
-	})
-	require.NoError(t, err)
+func (s *IntegrationSuite) TestCertManagerTypes() {
+	tmpl := s.createTemplate("api", "ClusterIssuer", "test-issuer")
+	certificate, err := tmpl.Execute(s.createDefaultValues())
+	s.Require().NoError(err)
 
-	certificate, err := tmpl.Execute(&template.Values{
-		PodInfo: podinfo.PodInfo{
-			Name:      "test-pod",
-			Namespace: "test-ns",
-			IP:        "10.0.0.1",
-		},
-		Hostname: "test",
-		FQDN:     "test.example.com",
-	})
-	require.NoError(t, err)
-
-	// Ensure the certificate uses the correct API version
-	assert.Equal(t, "cert-manager.io/v1", certificate.APIVersion)
-	assert.Equal(t, "Certificate", certificate.Kind)
+	s.IsType(&cmv1.Certificate{}, certificate)
+	s.NotNil(certificate.TypeMeta)
+	s.NotNil(certificate.ObjectMeta)
+	s.NotNil(certificate.Spec)
 }
 
-// TestIntegrationPodTLSSidecarTemplate validates pod-tls-sidecar template integration
-func TestIntegrationPodTLSSidecarTemplate(t *testing.T) {
-	// Test that the template package from pod-tls-sidecar works correctly
-	tmpl, err := New("vnc", &IssuerInfo{
-		Kind: "ClusterIssuer",
-		Name: "ca-issuer",
-	})
-	require.NoError(t, err)
-	require.NotNil(t, tmpl)
+func (s *IntegrationSuite) TestCertManagerAPIVersion() {
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
+	certificate, err := tmpl.Execute(s.createDefaultValues())
+	s.Require().NoError(err)
 
-	// Execute the template with various inputs
+	s.Equal("cert-manager.io/v1", certificate.APIVersion)
+	s.Equal("Certificate", certificate.Kind)
+}
+
+func (s *IntegrationSuite) TestPodTLSSidecarTemplate() {
+	tmpl := s.createTemplate("vnc", "ClusterIssuer", "ca-issuer")
+
 	tests := []struct {
 		name   string
 		values *template.Values
@@ -107,101 +93,57 @@ func TestIntegrationPodTLSSidecarTemplate(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			certificate, err := tmpl.Execute(tt.values)
-			require.NoError(t, err)
-			assert.NotNil(t, certificate)
-			assert.NotEmpty(t, certificate.Name)
-			assert.NotEmpty(t, certificate.Namespace)
+			s.Require().NoError(err)
+			s.NotNil(certificate)
+			s.NotEmpty(certificate.Name)
+			s.NotEmpty(certificate.Namespace)
 		})
 	}
 }
 
-// TestIntegrationCertificateUsages validates cert-manager usage types
-func TestIntegrationCertificateUsages(t *testing.T) {
-	tmpl, err := New("api", &IssuerInfo{
-		Kind: "Issuer",
-		Name: "test-issuer",
-	})
-	require.NoError(t, err)
+func (s *IntegrationSuite) TestCertificateUsages() {
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
+	certificate, err := tmpl.Execute(s.createDefaultValues())
+	s.Require().NoError(err)
 
-	certificate, err := tmpl.Execute(&template.Values{
-		PodInfo: podinfo.PodInfo{
-			Name:      "test-pod",
-			Namespace: "test-ns",
-			IP:        "10.0.0.1",
-		},
-		Hostname: "test",
-		FQDN:     "test.example.com",
-	})
-	require.NoError(t, err)
-
-	// Validate that cert-manager usage types are correctly set
 	expectedUsages := []cmv1.KeyUsage{
 		cmv1.UsageClientAuth,
 		cmv1.UsageServerAuth,
 	}
 
-	assert.ElementsMatch(t, expectedUsages, certificate.Spec.Usages)
+	s.ElementsMatch(expectedUsages, certificate.Spec.Usages)
 
-	// Ensure the usage types are from the correct package
 	for _, usage := range certificate.Spec.Usages {
-		assert.IsType(t, cmv1.KeyUsage(""), usage)
+		s.IsType(cmv1.KeyUsage(""), usage)
 	}
 }
 
-// TestIntegrationIssuerRef validates IssuerRef types
-func TestIntegrationIssuerRef(t *testing.T) {
+func (s *IntegrationSuite) TestIssuerRef() {
 	tests := []struct {
 		name       string
 		issuerKind string
 		issuerName string
 	}{
-		{
-			name:       "ClusterIssuer",
-			issuerKind: "ClusterIssuer",
-			issuerName: "ca-issuer",
-		},
-		{
-			name:       "Issuer",
-			issuerKind: "Issuer",
-			issuerName: "namespace-issuer",
-		},
+		{"ClusterIssuer", "ClusterIssuer", "ca-issuer"},
+		{"Issuer", "Issuer", "namespace-issuer"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpl, err := New("api", &IssuerInfo{
-				Kind: tt.issuerKind,
-				Name: tt.issuerName,
-			})
-			require.NoError(t, err)
+		s.Run(tt.name, func() {
+			tmpl := s.createTemplate("api", tt.issuerKind, tt.issuerName)
+			certificate, err := tmpl.Execute(s.createDefaultValues())
+			s.Require().NoError(err)
 
-			certificate, err := tmpl.Execute(&template.Values{
-				PodInfo: podinfo.PodInfo{
-					Name:      "test-pod",
-					Namespace: "test-ns",
-					IP:        "10.0.0.1",
-				},
-				Hostname: "test",
-				FQDN:     "test.example.com",
-			})
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.issuerKind, certificate.Spec.IssuerRef.Kind)
-			assert.Equal(t, tt.issuerName, certificate.Spec.IssuerRef.Name)
+			s.Equal(tt.issuerKind, certificate.Spec.IssuerRef.Kind)
+			s.Equal(tt.issuerName, certificate.Spec.IssuerRef.Name)
 		})
 	}
 }
 
-// TestIntegrationMetadataFields validates k8s metadata integration
-func TestIntegrationMetadataFields(t *testing.T) {
-	tmpl, err := New("api", &IssuerInfo{
-		Kind: "Issuer",
-		Name: "test-issuer",
-	})
-	require.NoError(t, err)
-
+func (s *IntegrationSuite) TestMetadataFields() {
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
 			Name:      "my-pod",
@@ -211,22 +153,15 @@ func TestIntegrationMetadataFields(t *testing.T) {
 		Hostname: "hostname",
 		FQDN:     "hostname.example.com",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	// Validate ObjectMeta fields
-	assert.Equal(t, "my-pod-api", certificate.ObjectMeta.Name)
-	assert.Equal(t, "my-namespace", certificate.ObjectMeta.Namespace)
-	assert.IsType(t, metav1.ObjectMeta{}, certificate.ObjectMeta)
+	s.Equal("my-pod-api", certificate.ObjectMeta.Name)
+	s.Equal("my-namespace", certificate.ObjectMeta.Namespace)
+	s.IsType(metav1.ObjectMeta{}, certificate.ObjectMeta)
 }
 
-// TestIntegrationDNSNamesAndIPAddresses validates DNS and IP field types
-func TestIntegrationDNSNamesAndIPAddresses(t *testing.T) {
-	tmpl, err := New("api", &IssuerInfo{
-		Kind: "Issuer",
-		Name: "test-issuer",
-	})
-	require.NoError(t, err)
-
+func (s *IntegrationSuite) TestDNSNamesAndIPAddresses() {
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
 			Name:      "test-pod",
@@ -236,25 +171,18 @@ func TestIntegrationDNSNamesAndIPAddresses(t *testing.T) {
 		Hostname: "myhost",
 		FQDN:     "myhost.example.com",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	// Validate DNSNames is a string slice
-	assert.IsType(t, []string{}, certificate.Spec.DNSNames)
-	assert.Len(t, certificate.Spec.DNSNames, 2)
+	s.IsType([]string{}, certificate.Spec.DNSNames)
+	s.Len(certificate.Spec.DNSNames, 2)
 
-	// Validate IPAddresses is a string slice
-	assert.IsType(t, []string{}, certificate.Spec.IPAddresses)
-	assert.Len(t, certificate.Spec.IPAddresses, 1)
-	assert.Equal(t, "192.168.1.100", certificate.Spec.IPAddresses[0])
+	s.IsType([]string{}, certificate.Spec.IPAddresses)
+	s.Len(certificate.Spec.IPAddresses, 1)
+	s.Equal("192.168.1.100", certificate.Spec.IPAddresses[0])
 }
 
-// TestIntegrationCommonName validates CommonName field
-func TestIntegrationCommonName(t *testing.T) {
-	tmpl, err := New("api", &IssuerInfo{
-		Kind: "Issuer",
-		Name: "test-issuer",
-	})
-	require.NoError(t, err)
+func (s *IntegrationSuite) TestCommonName() {
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
 
 	fqdn := "test.example.com"
 	certificate, err := tmpl.Execute(&template.Values{
@@ -266,40 +194,25 @@ func TestIntegrationCommonName(t *testing.T) {
 		Hostname: "test",
 		FQDN:     fqdn,
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	// Validate CommonName matches FQDN
-	assert.Equal(t, fqdn, certificate.Spec.CommonName)
-	assert.IsType(t, "", certificate.Spec.CommonName)
+	s.Equal(fqdn, certificate.Spec.CommonName)
+	s.IsType("", certificate.Spec.CommonName)
 }
 
-// TestIntegrationSecretName validates SecretName field
-func TestIntegrationSecretName(t *testing.T) {
+func (s *IntegrationSuite) TestSecretName() {
 	tests := []struct {
 		certName   string
 		podName    string
 		wantSecret string
 	}{
-		{
-			certName:   "api",
-			podName:    "libvirt-node-1",
-			wantSecret: "libvirt-node-1-api",
-		},
-		{
-			certName:   "vnc",
-			podName:    "compute-host",
-			wantSecret: "compute-host-vnc",
-		},
+		{"api", "libvirt-node-1", "libvirt-node-1-api"},
+		{"vnc", "compute-host", "compute-host-vnc"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.certName, func(t *testing.T) {
-			tmpl, err := New(tt.certName, &IssuerInfo{
-				Kind: "Issuer",
-				Name: "test-issuer",
-			})
-			require.NoError(t, err)
-
+		s.Run(tt.certName, func() {
+			tmpl := s.createTemplate(tt.certName, "Issuer", "test-issuer")
 			certificate, err := tmpl.Execute(&template.Values{
 				PodInfo: podinfo.PodInfo{
 					Name:      tt.podName,
@@ -309,49 +222,31 @@ func TestIntegrationSecretName(t *testing.T) {
 				Hostname: "test",
 				FQDN:     "test.example.com",
 			})
-			require.NoError(t, err)
+			s.Require().NoError(err)
 
-			assert.Equal(t, tt.wantSecret, certificate.Spec.SecretName)
+			s.Equal(tt.wantSecret, certificate.Spec.SecretName)
 		})
 	}
 }
 
-// TestIntegrationMultipleTemplateInstances validates creating multiple templates
-func TestIntegrationMultipleTemplateInstances(t *testing.T) {
-	// Create API template
-	apiTmpl, err := New("api", &IssuerInfo{
-		Kind: "ClusterIssuer",
-		Name: "api-issuer",
-	})
-	require.NoError(t, err)
+func (s *IntegrationSuite) TestMultipleTemplateInstances() {
+	apiTmpl := s.createTemplate("api", "ClusterIssuer", "api-issuer")
+	vncTmpl := s.createTemplate("vnc", "Issuer", "vnc-issuer")
 
-	// Create VNC template
-	vncTmpl, err := New("vnc", &IssuerInfo{
-		Kind: "Issuer",
-		Name: "vnc-issuer",
-	})
-	require.NoError(t, err)
+	values := s.createDefaultValues()
 
-	values := &template.Values{
-		PodInfo: podinfo.PodInfo{
-			Name:      "test-pod",
-			Namespace: "test-ns",
-			IP:        "10.0.0.1",
-		},
-		Hostname: "test",
-		FQDN:     "test.example.com",
-	}
-
-	// Execute both templates
 	apiCert, err := apiTmpl.Execute(values)
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
 	vncCert, err := vncTmpl.Execute(values)
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	// Verify they have different names and issuers
-	assert.Equal(t, "test-pod-api", apiCert.Name)
-	assert.Equal(t, "test-pod-vnc", vncCert.Name)
-	assert.Equal(t, "ClusterIssuer", apiCert.Spec.IssuerRef.Kind)
-	assert.Equal(t, "Issuer", vncCert.Spec.IssuerRef.Kind)
+	s.Equal("test-pod-api", apiCert.Name)
+	s.Equal("test-pod-vnc", vncCert.Name)
+	s.Equal("ClusterIssuer", apiCert.Spec.IssuerRef.Kind)
+	s.Equal("Issuer", vncCert.Spec.IssuerRef.Kind)
+}
+
+func TestIntegrationSuite(t *testing.T) {
+	suite.Run(t, new(IntegrationSuite))
 }
