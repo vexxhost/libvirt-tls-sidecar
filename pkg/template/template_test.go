@@ -3,22 +3,25 @@ package template
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"github.com/vexxhost/pod-tls-sidecar/pkg/podinfo"
 	"github.com/vexxhost/pod-tls-sidecar/pkg/template"
 
 	cmv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func TestNew(t *testing.T) {
+type TemplateSuite struct {
+	suite.Suite
+}
+
+func (s *TemplateSuite) TestNew() {
 	tmpl, err := New("api", &IssuerInfo{
 		Kind: "IssuerKind",
 		Name: "IssuerName",
 	})
 
-	assert.NoError(t, err)
-	assert.NotNil(t, tmpl)
+	s.NoError(err)
+	s.NotNil(tmpl)
 
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
@@ -29,38 +32,38 @@ func TestNew(t *testing.T) {
 		Hostname: "test-hostname",
 		FQDN:     "test-hostname.atmosphere.dev",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	assert.Equal(t, "test-pod-api", certificate.Name)
-	assert.Equal(t, "test-namespace", certificate.Namespace)
+	s.Equal("test-pod-api", certificate.Name)
+	s.Equal("test-namespace", certificate.Namespace)
 
-	assert.Equal(t, "test-hostname.atmosphere.dev", certificate.Spec.CommonName)
+	s.Equal("test-hostname.atmosphere.dev", certificate.Spec.CommonName)
 
-	assert.Len(t, certificate.Spec.DNSNames, 2)
-	assert.Contains(t, certificate.Spec.DNSNames, "test-hostname")
-	assert.Contains(t, certificate.Spec.DNSNames, "test-hostname.atmosphere.dev")
+	s.Len(certificate.Spec.DNSNames, 2)
+	s.Contains(certificate.Spec.DNSNames, "test-hostname")
+	s.Contains(certificate.Spec.DNSNames, "test-hostname.atmosphere.dev")
 
-	assert.Len(t, certificate.Spec.IPAddresses, 1)
-	assert.Contains(t, certificate.Spec.IPAddresses, "1.2.3.4")
+	s.Len(certificate.Spec.IPAddresses, 1)
+	s.Contains(certificate.Spec.IPAddresses, "1.2.3.4")
 
-	assert.Len(t, certificate.Spec.Usages, 2)
-	assert.Contains(t, certificate.Spec.Usages, cmv1.UsageClientAuth)
-	assert.Contains(t, certificate.Spec.Usages, cmv1.UsageServerAuth)
+	s.Len(certificate.Spec.Usages, 2)
+	s.Contains(certificate.Spec.Usages, cmv1.UsageClientAuth)
+	s.Contains(certificate.Spec.Usages, cmv1.UsageServerAuth)
 
-	assert.Equal(t, "IssuerKind", certificate.Spec.IssuerRef.Kind)
-	assert.Equal(t, "IssuerName", certificate.Spec.IssuerRef.Name)
+	s.Equal("IssuerKind", certificate.Spec.IssuerRef.Kind)
+	s.Equal("IssuerName", certificate.Spec.IssuerRef.Name)
 
-	assert.Equal(t, "test-pod-api", certificate.Spec.SecretName)
+	s.Equal("test-pod-api", certificate.Spec.SecretName)
 }
 
-func TestNewWithVNCName(t *testing.T) {
+func (s *TemplateSuite) TestNewWithVNCName() {
 	tmpl, err := New("vnc", &IssuerInfo{
 		Kind: "ClusterIssuer",
 		Name: "vnc-issuer",
 	})
 
-	assert.NoError(t, err)
-	assert.NotNil(t, tmpl)
+	s.NoError(err)
+	s.NotNil(tmpl)
 
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
@@ -71,52 +74,37 @@ func TestNewWithVNCName(t *testing.T) {
 		Hostname: "compute-01",
 		FQDN:     "compute-01.openstack.svc.cluster.local",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	assert.Equal(t, "compute-node-vnc", certificate.Name)
-	assert.Equal(t, "openstack", certificate.Namespace)
-	assert.Equal(t, "compute-01.openstack.svc.cluster.local", certificate.Spec.CommonName)
-	assert.Equal(t, "ClusterIssuer", certificate.Spec.IssuerRef.Kind)
-	assert.Equal(t, "vnc-issuer", certificate.Spec.IssuerRef.Name)
-	assert.Equal(t, "compute-node-vnc", certificate.Spec.SecretName)
+	s.Equal("compute-node-vnc", certificate.Name)
+	s.Equal("openstack", certificate.Namespace)
+	s.Equal("compute-01.openstack.svc.cluster.local", certificate.Spec.CommonName)
+	s.Equal("ClusterIssuer", certificate.Spec.IssuerRef.Kind)
+	s.Equal("vnc-issuer", certificate.Spec.IssuerRef.Name)
+	s.Equal("compute-node-vnc", certificate.Spec.SecretName)
 }
 
-func TestNewWithDifferentIssuerTypes(t *testing.T) {
+func (s *TemplateSuite) TestNewWithDifferentIssuerTypes() {
 	tests := []struct {
 		name       string
 		certName   string
 		issuerKind string
 		issuerName string
 	}{
-		{
-			name:       "Issuer type",
-			certName:   "api",
-			issuerKind: "Issuer",
-			issuerName: "ca-issuer",
-		},
-		{
-			name:       "ClusterIssuer type",
-			certName:   "vnc",
-			issuerKind: "ClusterIssuer",
-			issuerName: "cluster-ca",
-		},
-		{
-			name:       "Custom name with dashes",
-			certName:   "custom-cert",
-			issuerKind: "Issuer",
-			issuerName: "my-custom-issuer",
-		},
+		{"Issuer type", "api", "Issuer", "ca-issuer"},
+		{"ClusterIssuer type", "vnc", "ClusterIssuer", "cluster-ca"},
+		{"Custom name with dashes", "custom-cert", "Issuer", "my-custom-issuer"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			tmpl, err := New(tt.certName, &IssuerInfo{
 				Kind: tt.issuerKind,
 				Name: tt.issuerName,
 			})
 
-			require.NoError(t, err)
-			require.NotNil(t, tmpl)
+			s.Require().NoError(err)
+			s.Require().NotNil(tmpl)
 
 			certificate, err := tmpl.Execute(&template.Values{
 				PodInfo: podinfo.PodInfo{
@@ -127,21 +115,21 @@ func TestNewWithDifferentIssuerTypes(t *testing.T) {
 				Hostname: "test",
 				FQDN:     "test.example.com",
 			})
-			require.NoError(t, err)
+			s.Require().NoError(err)
 
-			assert.Equal(t, tt.issuerKind, certificate.Spec.IssuerRef.Kind)
-			assert.Equal(t, tt.issuerName, certificate.Spec.IssuerRef.Name)
-			assert.Equal(t, "test-pod-"+tt.certName, certificate.Name)
+			s.Equal(tt.issuerKind, certificate.Spec.IssuerRef.Kind)
+			s.Equal(tt.issuerName, certificate.Spec.IssuerRef.Name)
+			s.Equal("test-pod-"+tt.certName, certificate.Name)
 		})
 	}
 }
 
-func TestNewWithIPv6Address(t *testing.T) {
+func (s *TemplateSuite) TestNewWithIPv6Address() {
 	tmpl, err := New("api", &IssuerInfo{
 		Kind: "Issuer",
 		Name: "test-issuer",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
@@ -152,17 +140,17 @@ func TestNewWithIPv6Address(t *testing.T) {
 		Hostname: "ipv6-host",
 		FQDN:     "ipv6-host.example.com",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	assert.Contains(t, certificate.Spec.IPAddresses, "2001:db8::1")
+	s.Contains(certificate.Spec.IPAddresses, "2001:db8::1")
 }
 
-func TestNewWithSpecialCharactersInNames(t *testing.T) {
+func (s *TemplateSuite) TestNewWithSpecialCharactersInNames() {
 	tmpl, err := New("api-v2", &IssuerInfo{
 		Kind: "Issuer",
 		Name: "special-issuer-name",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
@@ -173,18 +161,18 @@ func TestNewWithSpecialCharactersInNames(t *testing.T) {
 		Hostname: "host-123",
 		FQDN:     "host-123.my-domain.example.org",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	assert.Equal(t, "pod-with-special-chars-api-v2", certificate.Name)
-	assert.Equal(t, "my-namespace", certificate.Namespace)
+	s.Equal("pod-with-special-chars-api-v2", certificate.Name)
+	s.Equal("my-namespace", certificate.Namespace)
 }
 
-func TestNewValidatesCertificateUsages(t *testing.T) {
+func (s *TemplateSuite) TestNewValidatesCertificateUsages() {
 	tmpl, err := New("api", &IssuerInfo{
 		Kind: "Issuer",
 		Name: "test-issuer",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
@@ -195,20 +183,19 @@ func TestNewValidatesCertificateUsages(t *testing.T) {
 		Hostname: "test",
 		FQDN:     "test.example.com",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	// Validate that both client auth and server auth are present
-	assert.Len(t, certificate.Spec.Usages, 2)
-	assert.Contains(t, certificate.Spec.Usages, cmv1.UsageClientAuth)
-	assert.Contains(t, certificate.Spec.Usages, cmv1.UsageServerAuth)
+	s.Len(certificate.Spec.Usages, 2)
+	s.Contains(certificate.Spec.Usages, cmv1.UsageClientAuth)
+	s.Contains(certificate.Spec.Usages, cmv1.UsageServerAuth)
 }
 
-func TestNewWithMultipleDNSNames(t *testing.T) {
+func (s *TemplateSuite) TestNewWithMultipleDNSNames() {
 	tmpl, err := New("api", &IssuerInfo{
 		Kind: "Issuer",
 		Name: "test-issuer",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
@@ -219,42 +206,32 @@ func TestNewWithMultipleDNSNames(t *testing.T) {
 		Hostname: "short-name",
 		FQDN:     "short-name.long.domain.example.com",
 	})
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	assert.Len(t, certificate.Spec.DNSNames, 2)
-	assert.Contains(t, certificate.Spec.DNSNames, "short-name")
-	assert.Contains(t, certificate.Spec.DNSNames, "short-name.long.domain.example.com")
-	assert.Equal(t, "short-name.long.domain.example.com", certificate.Spec.CommonName)
+	s.Len(certificate.Spec.DNSNames, 2)
+	s.Contains(certificate.Spec.DNSNames, "short-name")
+	s.Contains(certificate.Spec.DNSNames, "short-name.long.domain.example.com")
+	s.Equal("short-name.long.domain.example.com", certificate.Spec.CommonName)
 }
 
-func TestNewGeneratesCorrectSecretName(t *testing.T) {
+func (s *TemplateSuite) TestNewGeneratesCorrectSecretName() {
 	tests := []struct {
 		name           string
 		certName       string
 		podName        string
 		expectedSecret string
 	}{
-		{
-			name:           "API certificate",
-			certName:       "api",
-			podName:        "libvirt-node",
-			expectedSecret: "libvirt-node-api",
-		},
-		{
-			name:           "VNC certificate",
-			certName:       "vnc",
-			podName:        "compute-host",
-			expectedSecret: "compute-host-vnc",
-		},
+		{"API certificate", "api", "libvirt-node", "libvirt-node-api"},
+		{"VNC certificate", "vnc", "compute-host", "compute-host-vnc"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			tmpl, err := New(tt.certName, &IssuerInfo{
 				Kind: "Issuer",
 				Name: "test-issuer",
 			})
-			require.NoError(t, err)
+			s.Require().NoError(err)
 
 			certificate, err := tmpl.Execute(&template.Values{
 				PodInfo: podinfo.PodInfo{
@@ -265,15 +242,18 @@ func TestNewGeneratesCorrectSecretName(t *testing.T) {
 				Hostname: "test",
 				FQDN:     "test.example.com",
 			})
-			require.NoError(t, err)
+			s.Require().NoError(err)
 
-			assert.Equal(t, tt.expectedSecret, certificate.Spec.SecretName)
-			assert.Equal(t, tt.expectedSecret, certificate.Name)
+			s.Equal(tt.expectedSecret, certificate.Spec.SecretName)
+			s.Equal(tt.expectedSecret, certificate.Name)
 		})
 	}
 }
 
-// Benchmark tests
+func TestTemplateSuite(t *testing.T) {
+	suite.Run(t, new(TemplateSuite))
+}
+
 func BenchmarkNew(b *testing.B) {
 	issuer := &IssuerInfo{
 		Kind: "Issuer",
