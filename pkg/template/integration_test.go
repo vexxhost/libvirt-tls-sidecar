@@ -18,7 +18,7 @@ type IntegrationSuite struct {
 	suite.Suite
 }
 
-func (s *IntegrationSuite) newTemplate(name string, issuerKind string, issuerName string) *template.Template {
+func (s *IntegrationSuite) createTemplate(name string, issuerKind string, issuerName string) *template.Template {
 	tmpl, err := New(name, &IssuerInfo{
 		Kind: issuerKind,
 		Name: issuerName,
@@ -27,7 +27,7 @@ func (s *IntegrationSuite) newTemplate(name string, issuerKind string, issuerNam
 	return tmpl
 }
 
-func (s *IntegrationSuite) defaultValues() *template.Values {
+func (s *IntegrationSuite) createDefaultValues() *template.Values {
 	return &template.Values{
 		PodInfo: podinfo.PodInfo{
 			Name:      "test-pod",
@@ -40,8 +40,8 @@ func (s *IntegrationSuite) defaultValues() *template.Values {
 }
 
 func (s *IntegrationSuite) TestCertManagerTypes() {
-	tmpl := s.newTemplate("api", "ClusterIssuer", "test-issuer")
-	certificate, err := tmpl.Execute(s.defaultValues())
+	tmpl := s.createTemplate("api", "ClusterIssuer", "test-issuer")
+	certificate, err := tmpl.Execute(s.createDefaultValues())
 	s.Require().NoError(err)
 
 	s.IsType(&cmv1.Certificate{}, certificate)
@@ -51,8 +51,8 @@ func (s *IntegrationSuite) TestCertManagerTypes() {
 }
 
 func (s *IntegrationSuite) TestCertManagerAPIVersion() {
-	tmpl := s.newTemplate("api", "Issuer", "test-issuer")
-	certificate, err := tmpl.Execute(s.defaultValues())
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
+	certificate, err := tmpl.Execute(s.createDefaultValues())
 	s.Require().NoError(err)
 
 	s.Equal("cert-manager.io/v1", certificate.APIVersion)
@@ -60,7 +60,7 @@ func (s *IntegrationSuite) TestCertManagerAPIVersion() {
 }
 
 func (s *IntegrationSuite) TestPodTLSSidecarTemplate() {
-	tmpl := s.newTemplate("vnc", "ClusterIssuer", "ca-issuer")
+	tmpl := s.createTemplate("vnc", "ClusterIssuer", "ca-issuer")
 
 	tests := []struct {
 		name   string
@@ -104,8 +104,8 @@ func (s *IntegrationSuite) TestPodTLSSidecarTemplate() {
 }
 
 func (s *IntegrationSuite) TestCertificateUsages() {
-	tmpl := s.newTemplate("api", "Issuer", "test-issuer")
-	certificate, err := tmpl.Execute(s.defaultValues())
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
+	certificate, err := tmpl.Execute(s.createDefaultValues())
 	s.Require().NoError(err)
 
 	expectedUsages := []cmv1.KeyUsage{
@@ -132,8 +132,8 @@ func (s *IntegrationSuite) TestIssuerRef() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			tmpl := s.newTemplate("api", tt.issuerKind, tt.issuerName)
-			certificate, err := tmpl.Execute(s.defaultValues())
+			tmpl := s.createTemplate("api", tt.issuerKind, tt.issuerName)
+			certificate, err := tmpl.Execute(s.createDefaultValues())
 			s.Require().NoError(err)
 
 			s.Equal(tt.issuerKind, certificate.Spec.IssuerRef.Kind)
@@ -143,7 +143,7 @@ func (s *IntegrationSuite) TestIssuerRef() {
 }
 
 func (s *IntegrationSuite) TestMetadataFields() {
-	tmpl := s.newTemplate("api", "Issuer", "test-issuer")
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
 			Name:      "my-pod",
@@ -161,7 +161,7 @@ func (s *IntegrationSuite) TestMetadataFields() {
 }
 
 func (s *IntegrationSuite) TestDNSNamesAndIPAddresses() {
-	tmpl := s.newTemplate("api", "Issuer", "test-issuer")
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
 	certificate, err := tmpl.Execute(&template.Values{
 		PodInfo: podinfo.PodInfo{
 			Name:      "test-pod",
@@ -182,7 +182,7 @@ func (s *IntegrationSuite) TestDNSNamesAndIPAddresses() {
 }
 
 func (s *IntegrationSuite) TestCommonName() {
-	tmpl := s.newTemplate("api", "Issuer", "test-issuer")
+	tmpl := s.createTemplate("api", "Issuer", "test-issuer")
 
 	fqdn := "test.example.com"
 	certificate, err := tmpl.Execute(&template.Values{
@@ -212,7 +212,7 @@ func (s *IntegrationSuite) TestSecretName() {
 
 	for _, tt := range tests {
 		s.Run(tt.certName, func() {
-			tmpl := s.newTemplate(tt.certName, "Issuer", "test-issuer")
+			tmpl := s.createTemplate(tt.certName, "Issuer", "test-issuer")
 			certificate, err := tmpl.Execute(&template.Values{
 				PodInfo: podinfo.PodInfo{
 					Name:      tt.podName,
@@ -230,10 +230,10 @@ func (s *IntegrationSuite) TestSecretName() {
 }
 
 func (s *IntegrationSuite) TestMultipleTemplateInstances() {
-	apiTmpl := s.newTemplate("api", "ClusterIssuer", "api-issuer")
-	vncTmpl := s.newTemplate("vnc", "Issuer", "vnc-issuer")
+	apiTmpl := s.createTemplate("api", "ClusterIssuer", "api-issuer")
+	vncTmpl := s.createTemplate("vnc", "Issuer", "vnc-issuer")
 
-	values := s.defaultValues()
+	values := s.createDefaultValues()
 
 	apiCert, err := apiTmpl.Execute(values)
 	s.Require().NoError(err)
