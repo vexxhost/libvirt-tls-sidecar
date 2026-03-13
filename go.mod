@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vexxhost/pod-tls-sidecar v1.0.0
 	k8s.io/client-go v0.35.0
-	libvirt.org/go/libvirt v1.11010.0
+	libvirt.org/go/libvirt v1.12001.0
 )
 
 require (
