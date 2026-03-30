@@ -1,7 +1,7 @@
-// Copyright (c) 2024 VEXXHOST, Inc.
+// Copyright (c) 2026 VEXXHOST, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package dependencies_test
+package main_test
 
 import (
 	"testing"

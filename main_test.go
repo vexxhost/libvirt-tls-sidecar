@@ -1,4 +1,4 @@
-// Copyright (c) 2024 VEXXHOST, Inc.
+// Copyright (c) 2026 VEXXHOST, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build cgo
@@ -12,6 +12,8 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/vexxhost/libvirt-tls-sidecar/pkg/template"
 )
 
 type IssuerInfoSuite struct {
@@ -26,7 +28,7 @@ func (s *IssuerInfoSuite) TestValidAPIIssuerConfiguration() {
 	os.Setenv("API_ISSUER_KIND", "ClusterIssuer")
 	os.Setenv("API_ISSUER_NAME", "ca-issuer")
 
-	var issuer IssuerInfo
+	var issuer template.IssuerInfo
 	err := envconfig.Process("API", &issuer)
 
 	s.Require().NoError(err)
@@ -38,7 +40,7 @@ func (s *IssuerInfoSuite) TestValidVNCIssuerConfiguration() {
 	os.Setenv("VNC_ISSUER_KIND", "Issuer")
 	os.Setenv("VNC_ISSUER_NAME", "vnc-issuer")
 
-	var issuer IssuerInfo
+	var issuer template.IssuerInfo
 	err := envconfig.Process("VNC", &issuer)
 
 	s.Require().NoError(err)
@@ -49,7 +51,7 @@ func (s *IssuerInfoSuite) TestValidVNCIssuerConfiguration() {
 func (s *IssuerInfoSuite) TestMissingIssuerKind() {
 	os.Setenv("API_ISSUER_NAME", "ca-issuer")
 
-	var issuer IssuerInfo
+	var issuer template.IssuerInfo
 	err := envconfig.Process("API", &issuer)
 
 	s.Require().Error(err)
@@ -59,7 +61,7 @@ func (s *IssuerInfoSuite) TestMissingIssuerKind() {
 func (s *IssuerInfoSuite) TestMissingIssuerName() {
 	os.Setenv("API_ISSUER_KIND", "ClusterIssuer")
 
-	var issuer IssuerInfo
+	var issuer template.IssuerInfo
 	err := envconfig.Process("API", &issuer)
 
 	s.Require().Error(err)
@@ -67,7 +69,7 @@ func (s *IssuerInfoSuite) TestMissingIssuerName() {
 }
 
 func (s *IssuerInfoSuite) TestMissingBothRequiredFields() {
-	var issuer IssuerInfo
+	var issuer template.IssuerInfo
 	err := envconfig.Process("API", &issuer)
 
 	s.Require().Error(err)
@@ -75,7 +77,7 @@ func (s *IssuerInfoSuite) TestMissingBothRequiredFields() {
 }
 
 func (s *IssuerInfoSuite) TestStructureFields() {
-	issuer := IssuerInfo{
+	issuer := template.IssuerInfo{
 		Kind: "ClusterIssuer",
 		Name: "test-issuer",
 	}
@@ -101,7 +103,7 @@ func (s *IssuerInfoSuite) TestWithDifferentTypes() {
 			os.Setenv("TEST_ISSUER_KIND", tt.issuerKind)
 			os.Setenv("TEST_ISSUER_NAME", tt.issuerName)
 
-			var issuer IssuerInfo
+			var issuer template.IssuerInfo
 			err := envconfig.Process("TEST", &issuer)
 
 			s.Require().NoError(err)
@@ -115,7 +117,7 @@ func (s *IssuerInfoSuite) TestEmptyValuesAccepted() {
 	os.Setenv("TEST_ISSUER_KIND", "")
 	os.Setenv("TEST_ISSUER_NAME", "")
 
-	var issuer IssuerInfo
+	var issuer template.IssuerInfo
 	err := envconfig.Process("TEST", &issuer)
 
 	s.Require().NoError(err)
@@ -134,7 +136,7 @@ func BenchmarkEnvconfigProcess(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		var issuer IssuerInfo
+		var issuer template.IssuerInfo
 		if err := envconfig.Process("BENCH", &issuer); err != nil {
 			b.Fatal(err)
 		}
