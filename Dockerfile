@@ -1,7 +1,7 @@
 # Copyright (c) 2024 VEXXHOST, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-ARG RELEASE=trixie
+ARG RELEASE=trixie-20260421
 
 FROM golang:1.25.5-${RELEASE} AS builder
 WORKDIR /go/src/app
