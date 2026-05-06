@@ -170,6 +170,8 @@ libvirt.org/go/libvirt v1.10009.0 h1:Lf3jktPJwrOF/lIb6fZN/TNUPhNVyS70wAk8lI2dGj8
 libvirt.org/go/libvirt v1.10009.0/go.mod h1:1WiFE8EjZfq+FCVog+rvr1yatKbKZ9FaFMZgEqxEJqQ=
 libvirt.org/go/libvirt v1.11010.0 h1:1EIh2x6qcRoIBBOvrgN62vq5FIpgUBrmGadprQ/4M0Y=
 libvirt.org/go/libvirt v1.11010.0/go.mod h1:1WiFE8EjZfq+FCVog+rvr1yatKbKZ9FaFMZgEqxEJqQ=
+libvirt.org/go/libvirt v1.12003.0 h1:3ek4ObakscdShZRloa9s8/mGhK7xVduqNmAkb15ZEDQ=
+libvirt.org/go/libvirt v1.12003.0/go.mod h1:1WiFE8EjZfq+FCVog+rvr1yatKbKZ9FaFMZgEqxEJqQ=
 sigs.k8s.io/gateway-api v1.4.0 h1:ZwlNM6zOHq0h3WUX2gfByPs2yAEsy/EenYJB78jpQfQ=
 sigs.k8s.io/gateway-api v1.4.0/go.mod h1:AR5RSqciWP98OPckEjOjh2XJhAe2Na4LHyXD2FUY7Qk=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 h1:IpInykpT6ceI+QxKBbEflcR5EXP7sU1kvOlxwZh5txg=
