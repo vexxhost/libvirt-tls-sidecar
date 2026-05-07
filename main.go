@@ -5,6 +5,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os/exec"
 
 	"github.com/kelseyhightower/envconfig"
@@ -19,6 +21,28 @@ import (
 type IssuerInfo struct {
 	Kind string `envconfig:"ISSUER_KIND" required:"true"`
 	Name string `envconfig:"ISSUER_NAME" required:"true"`
+}
+
+type qmpError struct {
+	Class string `json:"class"`
+	Desc  string `json:"desc"`
+}
+
+type qmpResponse struct {
+	Error *qmpError `json:"error,omitempty"`
+}
+
+func validateQMPResponse(response string) error {
+	var decoded qmpResponse
+	if err := json.Unmarshal([]byte(response), &decoded); err != nil {
+		return fmt.Errorf("failed to parse qmp response: %w", err)
+	}
+
+	if decoded.Error != nil {
+		return fmt.Errorf("qmp error %s: %s", decoded.Error.Class, decoded.Error.Desc)
+	}
+
+	return nil
 }
 
 func main() {
@@ -76,6 +100,11 @@ func main() {
 			response, err := domain.QemuMonitorCommand(`{"execute": "display-reload", "arguments":{"type": "vnc", "tls-certs": true}}`, libvirt.DOMAIN_QEMU_MONITOR_COMMAND_DEFAULT)
 			if err != nil {
 				log.WithError(err).Error("failed to reload tls configuration for vnc")
+				continue
+			}
+
+			if err := validateQMPResponse(response); err != nil {
+				log.WithError(err).WithField("response", response).Error("failed to reload tls configuration for vnc")
 				continue
 			}
 
