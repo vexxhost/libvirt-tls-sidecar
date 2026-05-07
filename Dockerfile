@@ -3,7 +3,7 @@
 
 ARG RELEASE=trixie
 
-FROM golang:1.25.5-${RELEASE} AS builder
+FROM golang:1.26.0-${RELEASE} AS builder
 WORKDIR /go/src/app
 RUN \
   apt-get update && \
