@@ -8,7 +8,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/vexxhost/pod-tls-sidecar v1.0.1
-	k8s.io/client-go v0.36.1
+	k8s.io/client-go v1.5.2
 	libvirt.org/go/libvirt v1.12003.0
 )
 
