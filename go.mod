@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/cert-manager/cert-manager v1.21.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.1
 	github.com/stretchr/testify v1.12.1
 	github.com/vexxhost/pod-tls-sidecar v1.0.2
 	k8s.io/client-go v0.36.2
