@@ -41,6 +41,7 @@ jobs:
       - uses: depot/build-push-action@5f3b3c2e5a00f0093de47f657aeaefcedff27d18 # v1.17.0
         with:
           project: kfm1zcm810
+          platforms: linux/amd64,linux/arm64
           load: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
